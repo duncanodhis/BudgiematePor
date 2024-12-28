@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "budgiemate",
+    "slug": "budgiemate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow BudgieMate to use your location to show nearby places.",
+          "locationAlwaysPermission": "Allow BudgieMate to use your location to show nearby places.",
+          "locationWhenInUsePermission": "Allow BudgieMate to use your location to show nearby places."
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.budgiemate.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BudgieMate needs access to location to show you nearby places and deals.",
+        "NSLocationAlwaysUsageDescription": "BudgieMate needs access to location to show you nearby places and deals."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.budgiemate.app",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

@@ -1,0 +1,239 @@
+import React, { useRef, useState } from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import Swiper from "react-native-deck-swiper";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
+
+const SwipeCard = ({ data: initialData }) => {
+  const swiperRef = useRef(null);
+  const [data, setData] = useState(initialData || []);
+  const defaultImage = require("../../assets/images/user9.jpg");
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.noDataContainer}>
+        <Text style={styles.noDataText}>No more profiles to show</Text>
+      </View>
+    );
+  }
+
+  const renderCard = (card) => {
+    if (!card) return null;
+    
+    return (
+      <View style={styles.card}>
+        <Image
+          source={card.imgPath ? card.imgPath : defaultImage}
+          style={styles.cardImage}
+          defaultSource={defaultImage}
+        />
+        <View style={styles.cardDetails}>
+          <Text style={styles.cardTitle}>
+            {card.name ? `${card.name}, ${card.age || 'N/A'}` : 'Unknown User'}
+          </Text>
+          <Text style={styles.cardBio}>{card.bio || 'No bio available'}</Text>
+          <Text style={styles.cardDistance}>{card.distance || 'Distance unknown'}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const handleAction = (action) => {
+    if (!swiperRef.current) {
+      console.warn("Swiper reference is not available");
+      return;
+    }
+
+    switch (action) {
+      case "dismiss":
+        swiperRef.current.swipeLeft();
+        break;
+      case "like":
+        swiperRef.current.swipeRight();
+        break;
+      case "favorite":
+        if (data.length > 0) {
+          const currentCard = data[0];
+          Alert.alert(
+            "Favorite",
+            `${currentCard?.name || 'Profile'} added to favorites!`,
+            [{ text: "OK" }]
+          );
+        }
+        break;
+      default:
+        console.warn("Unknown action:", action);
+        break;
+    }
+  };
+
+  const handleSwipe = (index, direction) => {
+    const swipedCard = data[index];
+    const newData = data.filter((_, i) => i !== index);
+    setData(newData);
+    
+    if (direction === 'left') {
+      console.log(`Dismissed ${swipedCard?.name || 'the card'}`);
+    } else if (direction === 'right') {
+      console.log(`Liked ${swipedCard?.name || 'the card'}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Swiper
+        ref={swiperRef}
+        cards={data}
+        renderCard={renderCard}
+        onSwipedLeft={(index) => handleSwipe(index, 'left')}
+        onSwipedRight={(index) => handleSwipe(index, 'right')}
+        backgroundColor="#f0f0f0"
+        stackSize={3}
+        cardIndex={0}
+        showSecondCard={true}
+        disableTopSwipe={true}
+        disableBottomSwipe={true}
+        overlayLabels={{
+          left: {
+            title: "DISMISS",
+            style: {
+              label: {
+                backgroundColor: "red",
+                color: "white",
+                fontSize: 18,
+                padding: 10,
+                borderRadius: 5,
+              },
+              wrapper: {
+                flexDirection: "column",
+                alignItems: "flex-end",
+                justifyContent: "flex-start",
+                marginTop: 20,
+                marginLeft: -20,
+              },
+            },
+          },
+          right: {
+            title: "LIKE",
+            style: {
+              label: {
+                backgroundColor: "green",
+                color: "white",
+                fontSize: 18,
+                padding: 10,
+                borderRadius: 5,
+              },
+              wrapper: {
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                marginTop: 20,
+                marginLeft: 20,
+              },
+            },
+          },
+        }}
+      />
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#ff6b6b" }]}
+          onPress={() => handleAction("dismiss")}
+        >
+          <AntDesign name="close" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#f1c40f" }]}
+          onPress={() => handleAction("favorite")}
+        >
+          <FontAwesome name="star" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#2ecc71" }]}
+          onPress={() => handleAction("like")}
+        >
+          <AntDesign name="heart" size={30} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f0f0f0",
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+  },
+  noDataText: {
+    fontSize: 18,
+    color: "#666",
+  },
+  card: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardImage: {
+    flex: 2,
+    width: "100%",
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    resizeMode: "cover",
+  },
+  cardDetails: {
+    flex: 1,
+    padding: 15,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  cardBio: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 5,
+  },
+  cardDistance: {
+    fontSize: 12,
+    color: "#999",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+  },
+  actionButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+});
+
+export default SwipeCard;
