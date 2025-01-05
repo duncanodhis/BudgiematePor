@@ -1,6 +1,11 @@
 // src/services/authService.js
 
 import { supabase } from '../utils/supabase'; // Adjust the import path if needed
+export const AuthError = {
+  SESSION_MISSING: 'AUTH_SESSION_MISSING',
+  INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  NETWORK_ERROR: 'AUTH_NETWORK_ERROR',
+};
 
 export const signUp = async (email, password) => {
   try {
@@ -38,21 +43,26 @@ export const signOut = async () => {
   }
 };
 
+
 export const getUser = async () => {
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error("Error fetching user:", error);
-      return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error(AuthError.SESSION_MISSING);
     }
-    return user;
+    
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    
+    return { user, error: null };
   } catch (error) {
-    console.error("Error fetching user:", error);
-    return null;
+    console.error("Error in getUser:", error);
+    return {
+      user: null,
+      error: error.message || AuthError.NETWORK_ERROR
+    };
   }
 };
-
-
 
 export const resetPassword = async (email) => {
   try {

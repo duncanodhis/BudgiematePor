@@ -1,89 +1,151 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  SafeAreaView,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useUserInfo } from '../contexts/UserInfoContext';
+import PhotoUpload from '../components/PhotoUpload';
+import { updateProfilePhoto } from '../services/ProfileService';
 
-const PhotosScreen = ({ navigation, photos, setPhotos, handleSaveProfile }) => {
-  const handlePhotoUpload = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 1,
+const COLORS = {
+  primary: '#3B5998',
+  secondary: '#8B9DC3',
+  accent: '#DFE3EE',
+  text: '#333333',
+  error: '#FF4B67',
+  background: '#FFFFFF',
+  inputBg: '#F8F8F8',
+  border: '#E8E8E8',
+  placeholder: '#999999',
+  success: '#4CD964',
+};
+
+const PhotosScreen = () => {
+  const [photos, setPhotos] = useState([]);
+  const { userInfo, setUserInfo } = useUserInfo();
+  const navigation = useNavigation();
+
+  const handleNext = () => {
+    setUserInfo({
+      ...userInfo,
+      photos: photos,
     });
-
-    if (!result.cancelled) {
-      setPhotos([...photos, result.uri]);
-    }
+    navigation.navigate('NextScreen');
   };
 
   return (
-    <View style={styles.page}>
-      <Text style={styles.sectionTitle}>Photos</Text>
-      <View style={styles.photosContainer}>
-        {photos.map((photo, index) => (
-          <Image key={index} source={{ uri: photo }} style={styles.photo} />
-        ))}
-        {photos.length < 6 && (
-          <TouchableOpacity style={styles.addPhotoButton} onPress={handlePhotoUpload}>
-            <Text style={styles.addPhotoText}>Add Photo</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.contentContainer}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.header}>Upload Your Photos</Text>
+              <Text style={styles.subHeader}>
+                Add up to 6 photos to your profile
+              </Text>
+            </View>
+
+            <View style={styles.uploadContainer}>
+              <PhotoUpload
+                photos={photos}
+                onPhotosUpdate={setPhotos}
+                maxPhotos={6}
+              />
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Fixed bottom button container */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              photos.length === 0 && styles.continueButtonDisabled
+            ]}
+            onPress={handleNext}
+            disabled={photos.length === 0}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
-        )}
-      </View>
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-        <Text style={styles.buttonText}>Save Profile</Text>
-      </TouchableOpacity>
-    </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
-    page: {
-      flex: 1,
-      padding: 20,
-      backgroundColor: '#fff',
-    },
-    sectionTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      color: '#333',
-    },
-    photosContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginBottom: 20,
-    },
-    photo: {
-      width: 100,
-      height: 100,
-      borderRadius: 10,
-      marginRight: 10,
-      marginBottom: 10,
-    },
-    addPhotoButton: {
-      width: 100,
-      height: 100,
-      backgroundColor: '#E0E0E0',
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: 10,
-    },
-    addPhotoText: {
-      color: '#333',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    saveButton: {
-      backgroundColor: '#4CAF50',
-      padding: 15,
-      borderRadius: 10,
-      alignItems: 'center',
-      marginTop: 20,
-    },
-    buttonText: {
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-  });
-  
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 90,
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  headerContainer: {
+    marginBottom: 24,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  subHeader: {
+    fontSize: 16,
+    color: COLORS.placeholder,
+  },
+  uploadContainer: {
+    flex: 1,
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  continueButton: {
+    backgroundColor: COLORS.secondary,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    backgroundColor: COLORS.accent,
+  },
+  continueButtonText: {
+    color: COLORS.accent,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});
 
 export default PhotosScreen;

@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Button } from 'react-native';
+import Toast from 'react-native-toast-message';
 import BudgetPreferences from '../components/BudgetPreferences';
 import InterestTags from '../components/InterestTags';
 import PhotoUpload from '../components/PhotoUpload';
 import ProfileCompletion from '../components/ProfileCompletion';
 import VerificationBadge from '../components/VerificationBadge';
 import BasicInfo from '../components/BasicInfo';
+import { getUserProfile, updateUserProfile } from '../services/ProfileService';
+import { getUser , AuthError} from '../services/AuthService';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
+ 
+// Create a wrapper component for Toast that uses forwardRef
+const ToastWrapper = forwardRef((props, ref) => {
+  return <Toast {...props} ref={ref} />;
+});
 
 const ProfileScreen = () => {
+  const { user } = useAuth(); 
+  const navigation = useNavigation();
   const [preferences, setPreferences] = useState({
     minBudget: 0,
     maxBudget: 500,
@@ -17,30 +29,105 @@ const ProfileScreen = () => {
   const [selectedTags, setSelectedTags] = useState([]);
   const [isVerified, setIsVerified] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
-
-  const handleSave = (updatedInfo) => {
-    setUserInfo(updatedInfo);
-    console.log('Updated user info:', updatedInfo);
+  const [loading, setLoading] = useState(true);
+  const handleAuthError = (error) => {
+    if (error === AuthError.SESSION_MISSING) {
+      Toast.show({
+        type: 'error',
+        text1: 'Session Expired',
+        text2: 'Please log in again to continue.',
+      });
+      setTimeout(() => {
+        navigation.navigate('Login');
+      }, 1500);
+      return true;
+    }
+    return false;
   };
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        if (!user) {
+          throw new Error('No user found');
+        }
 
+        const { profile, error: profileError } = await getUserProfile(user.id);
+        if (profileError) throw new Error(profileError);
+
+        if (profile) {
+          setUserInfo(profile);
+          setPreferences(profile.preferences || preferences);
+          setPhotos(profile.photos || []);
+          setSelectedTags(profile.selectedTags || []);
+          setIsVerified(profile.isVerified || false);
+        }
+      } catch (error) {
+        console.error('Error in profile fetch:', error);
+        
+        const errorMessage = {
+          'No user found': 'Please log in to view your profile.',
+          'No user profile found': 'Please complete your profile.',
+        }[error.message] || 'Error loading profile. Please try again.';
+
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+  const handleSave = async (updatedInfo) => {
+    try {
+      if (!user) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please log in to update your profile.',
+        });
+        navigation.navigate('Login');
+        return;
+      }
+  
+      const { profile, error: updateError } = await updateUserProfile(user.id, {
+        ...updatedInfo,
+        preferences,
+        photos,
+        selectedTags,
+        isVerified,
+      });
+  
+      if (updateError) throw new Error(updateError);
+  
+      setUserInfo(profile);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Profile updated successfully.',
+      });
+    } catch (error) {
+      console.error('Error in profile update:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update profile. Please try again.',
+      });
+    }
+  };
   const handlePreferencesUpdate = (updatedPreferences) => {
     setPreferences(updatedPreferences);
-    console.log('Updated preferences:', updatedPreferences);
   };
 
   const handleTagsUpdate = (updatedTags) => {
     setSelectedTags(updatedTags);
-    console.log('Updated tags:', updatedTags);
   };
 
   const handlePhotosUpdate = (updatedPhotos) => {
     setPhotos(updatedPhotos);
-    console.log('Updated photos:', updatedPhotos);
-  };
-
-  const handleVerificationComplete = () => {
-    setIsVerified(true);
-    console.log('Verification completed');
   };
 
   const calculateProfileCompletion = () => {
@@ -51,53 +138,42 @@ const ProfileScreen = () => {
     return completion;
   };
 
-  const profileCompletionPercentage = calculateProfileCompletion();
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
-
-      {/* Photo Upload */}
+       {/* {user && <Text style={styles.text}>Logged in as: {user.email}</Text>} */}
       <PhotoUpload photos={photos} onPhotosUpdate={handlePhotosUpdate} maxPhotos={6} />
+      <ProfileCompletion percentage={calculateProfileCompletion()} />
+      <BasicInfo userInfo={userInfo} onSave={handleSave} />
 
-      {/* Profile Completion */}
-      <ProfileCompletion percentage={profileCompletionPercentage} />
-
-      {/* Basic Information */}
-      <BasicInfo onSave={handleSave} />
-
-      {/* User Info Display */}
       {userInfo && (
         <View style={styles.userInfoContainer}>
           <Text style={styles.userInfoText}>Name: {userInfo.name}</Text>
           <Text style={styles.userInfoText}>Age: {userInfo.age}</Text>
           <Text style={styles.userInfoText}>Location: {userInfo.location}</Text>
           <Text style={styles.userInfoText}>Bio: {userInfo.bio}</Text>
-          <Text style={styles.userInfoText}>Birthday: {userInfo.birthday.toLocaleDateString()}</Text>
+          <Text style={styles.userInfoText}>Birthday: {new Date(userInfo.birthday).toLocaleDateString()}</Text>
         </View>
       )}
 
-      {/* Budget Preferences */}
       <BudgetPreferences preferences={preferences} onPreferencesUpdate={handlePreferencesUpdate} />
-
-      {/* Interest Tags */}
       <InterestTags selectedTags={selectedTags} onTagsUpdate={handleTagsUpdate} />
 
-      {/* Save Button */}
       <View style={styles.buttonContainer}>
         <Button
           title="Save"
-          onPress={() =>
-            console.log({
-              preferences,
-              photos,
-              selectedTags,
-              isVerified,
-              userInfo,
-            })
-          }
+          onPress={() => userInfo && handleSave(userInfo)}
         />
       </View>
+      <ToastWrapper />
     </ScrollView>
   );
 };
@@ -134,7 +210,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 20,
     marginBottom: 20,
-    backgroundColor: '#3B5998', // matching color with the rest of the UI
+    backgroundColor: '#3B5998',
     borderRadius: 8,
     overflow: 'hidden',
   },

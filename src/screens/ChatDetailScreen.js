@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { chatData } from '.';
 import MessageInput from '../components/MessageInput';
+import { getMessages, sendMessage } from '../services/MessageService'; 
 
 const ChatDetailScreen = ({ route }) => {
   const { chatId } = route.params;

@@ -72,7 +72,7 @@ const SignupScreen = () => {
             });
   
             // Navigate to login after email confirmation
-            navigation.navigate('login');
+            navigation.navigate('Login');
           }, 5000); // Replace this with actual email confirmation logic if applicable
         }
       } catch (error) {
@@ -114,7 +114,7 @@ const SignupScreen = () => {
         <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Signing up...' : 'Sign Up'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('login')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
           <Text style={styles.link}>Already have an account? Login</Text>
         </TouchableOpacity>
         <Toast />

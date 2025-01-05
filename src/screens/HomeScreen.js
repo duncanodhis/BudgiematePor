@@ -29,13 +29,15 @@
 
 // export default HomeScreen;
 import React from "react";
-import { View, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, StyleSheet,   Text,SafeAreaView, TouchableOpacity } from "react-native";
 import { userData } from "./index"; // Adjust the path to your data file
 import SwipeCard from "../components/SwipeCard"; // Adjust the path to the component
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 
 const HomeScreen = () => {
+  const { user } = useAuth();
   const navigation = useNavigation();
 
   const openDrawer = () => {
@@ -44,6 +46,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+    {/* {user && <Text style={styles.text}>Logged in as: {user.email}</Text>} */}
       {/* Hamburger Icon to open the Sidebar */}
       <TouchableOpacity style={styles.menuButton} onPress={openDrawer}>
         <Icon name="menu" size={30} color="#3B5998" />

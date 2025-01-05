@@ -41,7 +41,7 @@ const WelcomeScreen = ({ navigation }) => {
 
       <TouchableOpacity
         style={styles.getStartedButton}
-        onPress={() => navigation.navigate('login')}  
+        onPress={() => navigation.navigate('Login')}  
       >
         <Text style={styles.buttonText}>Get Started</Text>
         <ArrowRightIcon color="#3B5998" size={24} style={styles.icon} />

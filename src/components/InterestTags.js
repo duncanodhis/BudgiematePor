@@ -1,95 +1,300 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView,
+  Animated,
+  Dimensions
+} from 'react-native';
+import { MotiView, AnimatePresence } from 'moti';
+import { FontAwesome5 } from '@expo/vector-icons';
 
-const AVAILABLE_TAGS = [
-  'Movies', 'Music', 'Food', 'Travel', 'Sports', 'Art',
-  'Reading', 'Gaming', 'Fitness', 'Photography', 'Cooking',
-  'Dancing', 'Technology', 'Fashion', 'Nature', 'Pets',
-  'Meditation', 'Yoga', 'Hiking', 'Adventure', 'Beach', 
-  'Nightlife', 'Volunteering', 'Camping', 'Wine Tasting', 'Crafting', 
-  'Board Games', 'DIY Projects', 'History', 'Astrology', 'Podcasts', 
-  'Spirituality', 'Comedy', 'Stand-up', 'Gardening' 
- 
-];
+const { width } = Dimensions.get('window');
 
-const MAX_SELECTION = 6;
+// Grouped tags by categories
+const CATEGORIES = {
+  'Lifestyle': ['Food', 'Fashion', 'Fitness', 'Meditation', 'Yoga', 'Spirituality'],
+  'Entertainment': ['Movies', 'Music', 'Gaming', 'Comedy', 'Stand-up', 'Podcasts'],
+  'Outdoors': ['Hiking', 'Adventure', 'Beach', 'Camping', 'Nature', 'Gardening'],
+  'Creative': ['Art', 'Photography', 'Cooking', 'Dancing', 'Crafting', 'DIY Projects'],
+  'Social': ['Travel', 'Nightlife', 'Volunteering', 'Wine Tasting', 'Board Games', 'Pets'],
+  'Culture': ['Reading', 'Technology', 'History', 'Astrology', 'Sports', 'Theatre']
+};
 
 const InterestTags = ({ selectedTags, onTagsUpdate }) => {
+  const [activeCategory, setActiveCategory] = useState('Lifestyle');
+  const scrollX = useRef(new Animated.Value(0)).current;
+
   const toggleTag = (tag) => {
-    // Prevent selection if already 6 tags are selected
     if (selectedTags.includes(tag)) {
       onTagsUpdate(selectedTags.filter(t => t !== tag));
-    } else if (selectedTags.length < MAX_SELECTION) {
+    } else {
       onTagsUpdate([...selectedTags, tag]);
     }
   };
 
+  const renderCategory = (category, index) => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
+
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.8, 1, 0.8],
+    });
+
+    return (
+      <Animated.View
+        key={category}
+        style={[
+          styles.categoryContainer,
+          { transform: [{ scale }] }
+        ]}
+      >
+        <View style={styles.categoryContent}>
+          <View style={styles.categoryHeader}>
+            <FontAwesome5 
+              name={getCategoryIcon(category)} 
+              size={24} 
+              color="#FF6B6B" 
+            />
+            <Text style={styles.categoryTitle}>{category}</Text>
+          </View>
+          <View style={styles.tagsGrid}>
+            {CATEGORIES[category].map((tag) => (
+              <MotiView
+                key={tag}
+                from={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  type: 'timing',
+                  duration: 500,
+                  delay: CATEGORIES[category].indexOf(tag) * 100,
+                }}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.tag,
+                    selectedTags.includes(tag) && styles.tagSelected,
+                  ]}
+                  onPress={() => toggleTag(tag)}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      selectedTags.includes(tag) && styles.tagTextSelected,
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </TouchableOpacity>
+              </MotiView>
+            ))}
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const getCategoryIcon = (category) => {
+    const icons = {
+      'Lifestyle': 'heart',
+      'Entertainment': 'film',
+      'Outdoors': 'mountain',
+      'Creative': 'paint-brush',
+      'Social': 'users',
+      'Culture': 'book'
+    };
+    return icons[category];
+  };
+
   return (
-    <View style={styles.tagsContainer}>
-      <Text style={styles.tagsTitle}>Interests</Text>
-      <View style={styles.tagsWrapper}>
-        {AVAILABLE_TAGS.map((tag) => (
+    <View style={styles.container}>
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 1000 }}
+      >
+        <Text style={styles.mainTitle}>What interests you?</Text>
+        <Text style={styles.subtitle}>Swipe to explore different categories</Text>
+      </MotiView>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoriesScroll}
+        contentContainerStyle={styles.categoriesScrollContent}
+      >
+        {Object.keys(CATEGORIES).map((category, index) => (
           <TouchableOpacity
-            key={tag}
+            key={category}
+            onPress={() => setActiveCategory(category)}
             style={[
-              styles.tag,
-              selectedTags.includes(tag) ? styles.tagSelected : null,
+              styles.categoryTab,
+              activeCategory === category && styles.categoryTabActive,
             ]}
-            onPress={() => toggleTag(tag)}
-            disabled={selectedTags.length >= MAX_SELECTION && !selectedTags.includes(tag)} // Disable if 6 tags are selected
           >
+            <FontAwesome5 
+              name={getCategoryIcon(category)} 
+              size={16} 
+              color={activeCategory === category ? '#FF6B6B' : '#666'} 
+            />
             <Text
               style={[
-                styles.tagText,
-                selectedTags.includes(tag) ? styles.tagTextSelected : null,
+                styles.categoryTabText,
+                activeCategory === category && styles.categoryTabTextActive,
               ]}
             >
-              {tag}
+              {category}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
-      {selectedTags.length >= MAX_SELECTION && (
-        <Text style={styles.limitMessage}>You can select up to 6 tags only.</Text>
-      )}
+      </ScrollView>
+
+      <Animated.ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+        style={styles.tagsScrollView}
+      >
+        {Object.keys(CATEGORIES).map((category, index) => renderCategory(category, index))}
+      </Animated.ScrollView>
+
+      <MotiView
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: 'timing', duration: 1000 }}
+        style={styles.selectedCount}
+      >
+        <Text style={styles.selectedCountText}>
+          {selectedTags.length} interests selected
+        </Text>
+      </MotiView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  tagsContainer: {
-    marginVertical: 16,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
   },
-  tagsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#333',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  tagsWrapper: {
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+  },
+  categoriesScroll: {
+    maxHeight: 50,
+    marginBottom: 24,
+  },
+  categoriesScrollContent: {
+    paddingHorizontal: 8,
+  },
+  categoryTab: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  tag: {
-    backgroundColor: '#f0f2f5',
-    borderRadius: 20,
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    margin: 4,
+    marginHorizontal: 4,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
+  },
+  categoryTabActive: {
+    backgroundColor: '#FFE5E5',
+  },
+  categoryTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  categoryTabTextActive: {
+    color: '#FF6B6B',
+  },
+  categoryContainer: {
+    width: width - 32,
+    paddingHorizontal: 16,
+  },
+  categoryContent: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  categoryTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginLeft: 12,
+  },
+  tagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  tag: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E1E4E8',
   },
   tagSelected: {
-    backgroundColor: '#3B5998',
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
   },
   tagText: {
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
   },
   tagTextSelected: {
     color: '#fff',
   },
-  limitMessage: {
-    fontSize: 14,
-    color: 'red',
-    marginTop: 8,
+  selectedCount: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  selectedCountText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  tagsScrollView: {
+    flex: 1,
   },
 });
 
